@@ -1,359 +1,219 @@
-# 🤖 FREEBOT - Frugal Robot Engineered from Efficient and Budget Optimised Technology
+# FREEBOT — Frugal Robot Engineered for Efficient, Affordable Autonomous Navigation
 
-![FREEBOT Robot](https://github.com/SRW09/Autonomous-Vehicle-/blob/main/FREEBOT-main/FREEBOT-main/Circuit_diagram_v1.png?raw=true)
+![FREEBOT Hardware](/FREEBOT-main/FREEBOT-main/WhatsApp%20Image%202025-11-07%20at%2013.55.11_5dcacd1c.jpg)
 
-## Overview
-
-FREEBOT is an open-source autonomous robot designed to make robotics accessible and affordable for beginners. This project demonstrates advanced robotics concepts including wireless control, computer vision, sensor integration, and real-time navigation using Python and C++ libraries.
-
-**Key Features:**
-- 🎮 Multi-control interface (keyboard, hand gestures, computer vision)
-- 📱 Mobile phone sensor integration
-- 🎥 Real-time video feed processing
-- 📡 UDP-based wireless communication
-- 🟢 Green ball tracking and chasing
-- 👋 Hand gesture recognition
+A compact, open-source autonomous robotics platform built around the ESP32 microcontroller and vision-based control. FREEBOT demonstrates how to combine lightweight embedded firmware, real-time computer vision, and simple UDP networking to create reliable, low-cost autonomous behaviors such as teleoperation, hand-gesture control, and visual object tracking.
 
 ---
 
-## 📋 Table of Contents
+## Project summary
 
-1. [Hardware Setup](#hardware-setup)
-2. [Hand Tracker Control](#hand-tracker-control)
-3. [Robot Control Center](#robot-control-center)
-4. [Ball Chasing Robot](#ball-chasing-robot)
-5. [Installation & Requirements](#installation--requirements)
+FREEBOT is designed with three core goals:
 
----
+- Accessibility: Use common, inexpensive hardware (ESP32, L298N, DC motors, smartphone camera) and easy-to-install software.
+- Modularity: Separate firmware, networking, and perception so you can replace or extend any component independently.
+- Real-time perception + control: Demonstrate closed-loop behavior using camera-based sensing (hand gestures, green-ball tracking) with low-latency UDP commands to the robot.
 
-## Hardware Setup
-
-### Components
-- **Microcontroller:** ESP32
-- **Motor Driver:** L298N
-- **Motors:** 2x DC Motors
-- **Wheels:** 2x Yellow wheels with tires
-- **Power Supply:** Li-ion batteries
-- **Communication:** WiFi module (built into ESP32)
-
-### Circuit Diagram & Physical Setup
-The circuit diagram and component layout show the motor driver connected to the ESP32, with power management and signal lines properly configured.
-
-![FREEBOT Hardware Setup](https://github.com/SRW09/Autonomous-Vehicle-/blob/main/FREEBOT-main/FREEBOT-main/Circuit_diagram_v1.png?raw=true)
-
-**Setup Instructions:**
-1. Connect L298N motor driver to ESP32 GPIO pins
-2. Attach DC motors to L298N outputs
-3. Wire battery power to the motor driver
-4. Ensure proper ESP32 board installation in Arduino IDE
+This repository contains Python control clients, example firmware integration patterns, mobile app artifacts, and schematics for the hardware.
 
 ---
 
-## 🖐️ Hand Tracker Control
+## Architecture (high level)
 
-Control the robot using real-time hand gesture recognition via your device's camera.
+1. Perception (Control Host)
+   - A laptop or smartphone runs a camera stream + computer vision pipeline (OpenCV, MediaPipe).
+   - Visual modules detect gestures or green objects and convert them into discrete motion commands.
 
-### Requirements
-- Python 3.9+
-- OpenCV
-- MediaPipe
-- Socket library
+2. Communication Layer
+   - Commands are serialized as short UDP messages and sent over the local Wi-Fi network to the robot's IP/port.
+   - Chosen for simplicity and low overhead; UDP provides minimal latency for interactive teleoperation.
 
-### Installation
-```bash
-pip install opencv-python mediapipe
-```
-
-### How to Setup
-
-1. Install Python 3.9
-2. Install required libraries:
-   ```bash
-   pip install opencv-python mediapipe
-   ```
-3. Download `Handtracker-control.py`
-4. Get your FREEBOT's IP address
-5. Update the IP address in the script
-6. Run the program:
-   ```bash
-   python Handtracker-control.py
-   ```
-
-### Hand Gesture Commands
-
-| Gesture | Action |
-|---------|--------|
-| 👆 Hand above top box | Move Forward |
-| 👇 Hand below bottom box | Move Backward |
-| 🔄 Hand rotated right | Turn Right |
-| 🔄 Hand rotated left | Turn Left |
-| ⏸️ Hand in center | Stop |
-
-**Note:** Hand tracking currently optimized for left-hand detection.
-
-### Hand Tracking Demo
-![Hand Control Interface](https://github.com/SRW09/Autonomous-Vehicle-/blob/main/FREEBOT-main/FREEBOT-main/Circuit_diagram_v1.png?raw=true)
-
-*Real-time hand gesture recognition with rotation angle calculation and bounding box detection*
+3. Actuation (Robot)
+   - An ESP32 receives UDP packets, parses movement commands, and drives the L298N motor controller.
+   - Power and motor connections use a simple H-bridge (L298N) and battery management suitable for small DC motors.
 
 ---
 
-## 🎮 Robot Control Center
+## What's new in this README
 
-### Robot Control via Live Camera Feed
+- Clear architecture and dataflow explanation
+- Deployment and quick-start instructions for both perception host and robot firmware
+- Descriptions of the core algorithms used for gesture and ball tracking
+- Example UDP command format and recommended safety considerations
 
-This Python script provides real-time video control of the robot with keyboard inputs and an intuitive user interface.
+---
 
-### Prerequisites
+## Key features
 
-- Python 3.7+
-- OpenCV (`cv2`)
-- NumPy
-- Keyboard library (optional for advanced control)
+- Multi-modal control: Keyboard, hand-gesture (MediaPipe), and vision-based autonomous tracking
+- Live camera streaming support for remote monitoring
+- UDP-based low-latency control channel
+- Tunable vision parameters (HSV thresholds, contour filtering) exposed via GUI trackbars
+- Minimal hardware BOM — designed for low-cost experimentation
 
-### Installation
+---
+
+## Quick start — perception host (Python)
+
+Prerequisites
+
+- Python 3.9+ recommended
+- Libraries: OpenCV, NumPy. Optional: MediaPipe for hand tracking.
+
+Install
 
 ```bash
 pip install opencv-python numpy
+# Optional for gesture detection
+pip install mediapipe
 ```
 
-### Usage
+Run examples
 
-1. **Configure the camera URL:**
-   ```python
-   url = 'http://192.168.4.2:8080/video'  # Replace with your camera stream URL
-   ```
+1. Hand-tracker (gesture -> UDP command)
 
-2. **Set robot network parameters:**
-   ```python
-   udp_host = '0.0.0.0'  # Listening address
-   udp_port = 12345      # Communication port
-   ```
+- Edit the IP/PORT at the top of `Handtracker-control.py` to your robot's IP and UDP port.
 
-3. **Run the control script:**
-   ```bash
-   python Robot_control_centre_v1.py
-   ```
+```python
+ROBOT_IP = "192.168.4.1"
+ROBOT_PORT = 12345
+```
 
-### Keyboard Controls
-
-| Key | Function |
-|-----|----------|
-| **W** | Move Forward |
-| **S** | Move Backward |
-| **A** | Turn Left |
-| **D** | Turn Right |
-| **Q** | Quit Program |
-
-### Mobile Control Interface
-![Robot Control UI with Speed Slider](https://github.com/SRW09/Autonomous-Vehicle-/blob/main/FREEBOT-main/FREEBOT-main/Circuit_diagram_v1.png?raw=true)
-
-*Intuitive mobile interface with directional controls and adjustable speed slider*
-
-### How It Works
-
-- Opens a UDP socket for robot communication
-- Captures and displays live camera feed
-- Processes keyboard inputs in real-time
-- Sends movement commands via UDP protocol
-- Supports adjustable speed via trackbars
-
----
-
-## 🟢 Ball Chasing Robot
-
-This module demonstrates advanced computer vision capabilities with real-time ball detection and autonomous tracking.
-
-### Overview
-
-The ball-chasing robot uses OpenCV to detect a green ball in the camera feed and automatically moves to follow it. The robot's movement is controlled based on the ball's position relative to a detection zone.
-
-### Libraries to Install
+- Run:
 
 ```bash
-pip install opencv-python numpy Pillow
+python Handtracker-control.py
 ```
 
-### How to Run
+Hand gestures are mapped to concise action tokens that the firmware can parse (e.g. `FWD`, `BACK`, `LEFT`, `RIGHT`, `STOP`).
 
-1. Clone the repository or download the source code
-2. Ensure camera connection and update URL if needed:
-   ```python
-   url = 'http://192.168.4.2:8080/video'
-   ```
-3. Update robot IP and port:
-   ```python
-   sock.sendto(response_message.encode("utf-8"), ('192.168.4.1', 12345))
-   ```
-4. Run the program:
-   ```bash
-   python Ball_chasing_robot.py
-   ```
+2. Robot control centre (keyboard + live camera)
 
-### Ball Chasing in Action
-![Ball Chasing Robot Tracking](https://github.com/SRW09/Autonomous-Vehicle-/blob/main/FREEBOT-main/FREEBOT-main/Circuit_diagram_v1.png?raw=true)
+- Update the camera stream URL and robot network settings inside `Robot_control_centre_v1.py`.
+- Example camera stream URL:
 
-*FREEBOT detecting and tracking a green ball with real-time telemetry overlay*
-
-### Detection Zone Logic
-
-The robot uses a central detection rectangle to determine movement commands:
-
-```
-                    ┌─────────────┐
-                    │   FORWARD   │
-                    └─────────────┘
-           ┌────────────┐   ┌────────────┐
-           │    LEFT    │   │   RIGHT    │
-           └────────────┘   └────────────┘
-                    ┌─────────────┐
-                    │   BACKWARD  │
-                    └─────────────┘
+```python
+url = 'http://192.168.4.2:8080/video'  # replace with your camera stream
 ```
 
-**Movement Rules:**
-- **Above zone** → Move forward
-- **Below zone** → Move backward
-- **Inside zone** → Stop
-- **Left of zone** → Turn left
-- **Right of zone** → Turn right
-
-### Features
-
-✅ Real-time green ball detection using HSV color space  
-✅ Contour analysis to track ball position  
-✅ Speed adjustment via interactive trackbar  
-✅ Color threshold adjustment for different lighting  
-✅ Ball trail visualization  
-✅ On-screen telemetry display (X, Y coordinates, diameter)  
-
-### Live Ball Detection Display
-![Ball Detection with Telemetry](https://github.com/SRW09/Autonomous-Vehicle-/blob/main/FREEBOT-main/FREEBOT-main/Circuit_diagram_v1.png?raw=true)
-
-*Real-time green ball detection with on-screen metrics: diameter, position coordinates, and detection rectangle*
-
-### Step-by-Step Explanation
-
-#### 1. **Initialization**
-- Sets up UDP socket for robot communication
-- Configures HSV color bounds for green detection
-- Initializes trail buffer for motion visualization
-- Sets up camera and display parameters
-
-#### 2. **Green Ball Detection**
-The `detect_green_ball()` function:
-- Converts BGR frame to HSV color space
-- Applies color threshold to isolate green pixels
-- Finds contours in the mask
-- Returns centroid coordinates of the largest contour
-
-#### 3. **Live Camera Feed Processing**
-- Continuously captures frames from camera
-- Detects green ball in each frame
-- Draws visual indicators (circles, trails, text)
-- Updates trackbar values for real-time adjustment
-
-#### 4. **Robot Control Logic**
-Based on ball position:
-- Generates appropriate movement commands
-- Adjusts speed dynamically
-- Sends commands via UDP to robot
-
-#### 5. **Visual Feedback**
-- Real-time coordinate display
-- Ball diameter measurement
-- Motion trail visualization
-- Detection zone rectangle overlay
-- Speed and command indicators
-
----
-
-## 🛠️ Installation & Requirements
-
-### System Requirements
-
-- **Python:** 3.7 or higher
-- **OS:** Windows, macOS, or Linux
-- **Network:** WiFi connectivity between robot and control device
-
-### Required Libraries
+- Run:
 
 ```bash
-# Core libraries
-pip install opencv-python numpy
-
-# Optional for advanced features
-pip install mediapipe pillow
+python Robot_control_centre_v1.py
 ```
 
-### Arduino IDE Setup for ESP32
+Keyboard layout: W/A/S/D for motion, Q to quit. The script opens a UDP socket and sends compact commands to the robot.
 
-1. Open Arduino IDE → **File > Preferences**
-2. Add Board Manager URL:
-   ```
-   https://dl.espressif.com/dl/package_esp32_index.json
-   ```
-3. Go to **Tools > Board > Boards Manager**
-4. Search for "ESP32" and install "ESP32 by Espressif Systems"
-5. Select your ESP32 board from **Tools > Board**
-6. Connect ESP32 via USB and select the appropriate port
+3. Ball chasing (autonomous vision)
 
-### Motor Driver Setup
+- Update camera URL and robot IP/port in `Ball_chasing_robot.py` and run:
 
-For detailed L298N motor driver configuration, refer to: [DroneBotWorkshop L298N Tutorial](https://www.youtube.com/watch?v=dyjo_ggEtVU&ab_channel=DroneBotWorkshop)
+```bash
+python Ball_chasing_robot.py
+```
+
+The program performs HSV-based color segmentation, contour extraction, and a simple position-based controller to steer the robot toward the detected ball.
 
 ---
 
-## 📁 Project Structure
+## Vision algorithms — practical details
+
+1. Green-ball detection (HSV segmentation + contour tracking)
+
+- Convert BGR -> HSV and apply tunable thresholds (H, S, V). Use GUI trackbars to adjust in-field.
+- Apply morphological opening/closing to reduce noise, then find contours.
+- Filter contours by area and circularity; choose the largest valid contour and compute its centroid and enclosing circle.
+- Control logic maps centroid position relative to a central "dead-zone" rectangle to discrete commands:
+  - x left → TURN LEFT
+  - x right → TURN RIGHT
+  - y above → MOVE FORWARD
+  - y below → MOVE BACK
+  - inside dead-zone → STOP
+
+2. Hand-gesture control (MediaPipe landmarks)
+
+- Detect hand landmarks and compute gesture heuristics (e.g., centroid location in vertical bands, rotation angle from wrist-to-index vector).
+- Map discrete gestures to commands (same tokens used by ball-chasing/keyboard code).
+- This separation keeps the command layer consistent across controllers.
+
+3. Optional: Add a lightweight PID on angle or distance to smooth commands and reduce oscillation. Keep the command rate bounded (e.g., 10–20 Hz) to avoid flooding the ESP32.
+
+---
+
+## UDP command format (recommended)
+
+- Use simple ASCII tokens, 1–8 bytes long, to simplify parsing on the microcontroller.
+- Example messages:
+
+```
+FWD:100   # Move forward at speed 100 (0-255)
+BACK:120  # Move backward
+LEFT:080  # Turn left at speed 80
+RIGHT:080 # Turn right at speed 80
+STOP
+```
+
+- Keep a short heartbeat or safety timeout on the ESP32: if no valid command arrives for >300–500 ms, stop motors.
+
+---
+
+## Firmware notes (ESP32)
+
+- The ESP32 firmware should: (1) bring up Wi-Fi in STA or AP mode, (2) open a UDP socket and listen for commands, (3) parse tokens and map to PWM outputs for the L298N.
+- Use hardware PWM channels where possible and protect motors with current-limited battery packs.
+
+---
+
+## Hardware bill of materials (typical)
+
+- ESP32 development board (any common dev board)
+- L298N motor driver (or any compatible H-bridge)
+- 2x DC motors + wheels
+- Li-ion battery pack (voltage matched to motors)
+- Jumper wires, chassis
+
+Refer to `FREEBOT-main/Circuit_diagram_v1.png` for wiring and pin suggestions.
+
+---
+
+## Project layout
 
 ```
 FREEBOT-main/
-├── Ball_chasing_robot.py          # Ball detection and tracking
-├── Handtracker-control.py         # Hand gesture recognition
-├── Robot_control_centre_v1.py     # Keyboard-based control
-├── FREEbot.aia                    # MIT App Inventor source
-├── FREEbot.apk                    # Mobile app package
-├── Circuit_diagram_v1.png         # Hardware schematic
-└── README.md                      # This file
+├── Ball_chasing_robot.py
+├── Handtracker-control.py
+├── Robot_control_centre_v1.py
+├── FREEbot.aia
+├── FREEbot.apk
+├── Circuit_diagram_v1.png
+└── README.md
 ```
 
 ---
 
-## 📱 Mobile Application
+## Troubleshooting & tips
 
-A companion Android app (`FREEbot.apk`) is available for mobile-based robot control with an intuitive touch interface.
-
----
-
-## 🔗 References & Resources
-
-- **Original FREEBOT Project:** https://github.com/sastejugaad/FREEBOT/
-- **Tutorial Series:**
-  - [Part 1](https://www.youtube.com/watch?v=ymNAXm_j8do&t=3s)
-  - [Part 2](https://www.youtube.com/watch?v=j49aA8wwWxY&ab_channel=SasteJugaad)
-  - [Part 3](https://www.youtube.com/watch?v=SvNt3h0w55A&ab_channel=SasteJugaad)
+- If the camera stream is noisy, tune HSV thresholds and increase morphological kernel sizes.
+- If commands are missed, check Wi‑Fi connectivity and increase packet send interval; enable a small ACK/heartbeat if needed.
+- Always test motors at low speeds first and verify wiring before applying full battery voltage.
 
 ---
 
-## 💬 Community & Support
+## References
 
-- **Discord:** https://discord.com/invite/fMXvGty
-- **Instagram:** https://www.instagram.com/shub_bhatt/
-
----
-
-## 📝 License
-
-This project is open-source and available for educational and personal use.
+- Original inspiration & upstream: https://github.com/sastejugaad/FREEBOT/
+- DroneBot L298N tutorial: https://www.youtube.com/watch?v=dyjo_ggEtVU&ab_channel=DroneBotWorkshop
 
 ---
 
-## 🎯 Next Steps
+## License
 
-1. Assemble the hardware following the circuit diagram
-2. Flash the ESP32 with the robot firmware
-3. Configure your network settings
-4. Choose your preferred control method (keyboard, hand gestures, or ball tracking)
-5. Run and enjoy your FREEBOT! 🚀
+Open-source for educational and personal use. Please credit and link back to the original authors when reusing material.
 
-**Happy Robotics! 🤖**
+---
+
+## Next steps
+
+- Add a small firmware example folder with a UDP command parser and motor PWM abstraction.
+- Add unit-tested vision modules (separate detection and control components).
+- Optional: add a simple web dashboard for remote monitoring and parameter tuning.
